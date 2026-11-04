@@ -159,6 +159,7 @@ dialog.addEventListener("keydown", (e) => {
 /* ---------- Forms: validate, then deliver via FormSubmit (mailto fallback) ---------- */
 const FIRM_EMAIL = "dawrekhamolaar@gmail.com";
 const FORM_ENDPOINT = `https://formsubmit.co/ajax/${FIRM_EMAIL}`;
+const CC_EMAIL = "info@silkcover.org";
 
 $$("form.form").forEach((form) => {
   const status = $(".form__status", form);
@@ -180,6 +181,7 @@ $$("form.form").forEach((form) => {
     const payload = Object.fromEntries(fields.map((f) => [f.name, f.value]));
     payload._subject = form.dataset.subject;
     payload._template = "table";
+    payload._cc = CC_EMAIL;
     payload._honey = form.elements._honey.value;
 
     button.disabled = true;
