@@ -499,3 +499,4 @@ p { margin: 0 0 1em; }
   .js .reveal { opacity: 1; transform: none; }
   .traveller { display: none; }
 }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }

@@ -156,15 +156,17 @@ dialog.addEventListener("keydown", (e) => {
   if (e.key === "ArrowLeft") showMember(current - 1);
 });
 
-/* ---------- Forms: validate, then open the visitor's email app ---------- */
+/* ---------- Forms: validate, then deliver via FormSubmit (mailto fallback) ---------- */
 const FIRM_EMAIL = "dawrekhamolaar@gmail.com";
+const FORM_ENDPOINT = `https://formsubmit.co/ajax/${FIRM_EMAIL}`;
 
 $$("form.form").forEach((form) => {
   const status = $(".form__status", form);
-  form.addEventListener("submit", (e) => {
+  const button = $('button[type="submit"]', form);
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
     let firstInvalid = null;
-    $$("input, textarea", form).forEach((field) => {
+    $$("input:not(.hp), textarea", form).forEach((field) => {
       const ok = field.checkValidity();
       field.closest(".field").classList.toggle("is-invalid", !ok);
       if (!ok && !firstInvalid) firstInvalid = field;
@@ -174,14 +176,34 @@ $$("form.form").forEach((form) => {
       firstInvalid.focus();
       return;
     }
-    const body = $$("input, textarea, select", form)
-      .map((f) => `${f.name}: ${f.value}`)
-      .join("\n\n");
-    location.href = `mailto:${FIRM_EMAIL}?subject=${encodeURIComponent(form.dataset.subject)}&body=${encodeURIComponent(body)}`;
-    status.textContent = "Thanks for submitting! Your email app should open with your message ready to send.";
-    form.reset();
+    const fields = $$("input, textarea, select", form).filter((f) => f.name && f.name !== "_honey");
+    const payload = Object.fromEntries(fields.map((f) => [f.name, f.value]));
+    payload._subject = form.dataset.subject;
+    payload._template = "table";
+    payload._honey = form.elements._honey.value;
+
+    button.disabled = true;
+    status.textContent = "Sending…";
+    try {
+      const res = await fetch(FORM_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || String(data.success) !== "true") throw new Error(data.message);
+      status.textContent = "Thanks for submitting! We will get back to you soon.";
+      form.reset();
+    } catch {
+      // Delivery failed: hand the message to the visitor's email app instead.
+      const body = fields.map((f) => `${f.name}: ${f.value}`).join("\n\n");
+      location.href = `mailto:${FIRM_EMAIL}?subject=${encodeURIComponent(form.dataset.subject)}&body=${encodeURIComponent(body)}`;
+      status.textContent = "We couldn't send that automatically, so your email app has opened with your message ready to send.";
+    } finally {
+      button.disabled = false;
+    }
   });
-  $$("input, textarea", form).forEach((field) =>
+  $$("input:not(.hp), textarea", form).forEach((field) =>
     field.addEventListener("input", () => field.closest(".field").classList.remove("is-invalid"))
   );
 });
