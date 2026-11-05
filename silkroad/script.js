@@ -61,6 +61,7 @@ $$(".reveal").forEach((el) => {
   revealer.observe(el);
 });
 
+$$(".stars").forEach((el) => revealer.observe(el));
 
 /* ---------- Count-up stats ---------- */
 function countUp(el) {
@@ -117,33 +118,48 @@ tabs.forEach((tab, i) => {
   });
 });
 
-/* ---------- Practice-area chips open their tab ---------- */
-$$("[data-area]").forEach((chip) =>
-  chip.addEventListener("click", () => selectTab($(`#tab-${chip.dataset.area}`)))
-);
+/* ---------- Team bio dialog ---------- */
+const dialog = $("#bioDialog");
+const members = $$(".member");
+let current = 0;
 
-/* ---------- Gentle parallax on photo backgrounds ---------- */
-const parallax = $$(".hero__bg, .cta__bg");
-if (!reducedMotion && parallax.length) {
-  let ticking = false;
-  const update = () => {
-    parallax.forEach((bg) => {
-      const r = bg.parentElement.getBoundingClientRect();
-      if (r.bottom < 0 || r.top > innerHeight) return;
-      bg.style.transform = `translate3d(0, ${(r.top * -0.12).toFixed(1)}px, 0)`;
-    });
-    ticking = false;
-  };
-  addEventListener("scroll", () => {
-    if (!ticking) requestAnimationFrame(update);
-    ticking = true;
-  }, { passive: true });
-  update();
+function showMember(i) {
+  current = (i + members.length) % members.length;
+  const m = members[current];
+  const img = $("img", m);
+  $("#bioImg").src = img.src;
+  $("#bioImg").alt = img.alt;
+  $("#bioName").textContent = $(".member__name", m).textContent;
+  $("#bioRole").textContent = $(".member__role", m).textContent;
+  $("#bioText").innerHTML = $(".member__bio", m).innerHTML;
+  $(".bio__body", dialog).scrollTop = 0;
+  $(".bio__grid", dialog).scrollTop = 0;
 }
 
+members.forEach((m, i) =>
+  $(".member__open", m).addEventListener("click", () => {
+    showMember(i);
+    dialog.showModal();
+    document.body.style.overflow = "hidden";
+  })
+);
+$("#bioClose").addEventListener("click", () => dialog.close());
+$("#bioPrev").addEventListener("click", () => showMember(current - 1));
+$("#bioNext").addEventListener("click", () => showMember(current + 1));
+dialog.addEventListener("click", (e) => e.target === dialog && dialog.close());
+dialog.addEventListener("close", () => {
+  document.body.style.overflow = "";
+  $(".member__open", members[current]).focus();
+});
+dialog.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowRight") showMember(current + 1);
+  if (e.key === "ArrowLeft") showMember(current - 1);
+});
+
 /* ---------- Forms: validate, then deliver via FormSubmit (mailto fallback) ---------- */
-const FIRM_EMAIL = "info@silkcover.org";
+const FIRM_EMAIL = "dawrekhamolaar@gmail.com";
 const FORM_ENDPOINT = `https://formsubmit.co/ajax/${FIRM_EMAIL}`;
+const CC_EMAIL = "info@silkcover.org";
 
 $$("form.form").forEach((form) => {
   const status = $(".form__status", form);
@@ -165,6 +181,7 @@ $$("form.form").forEach((form) => {
     const payload = Object.fromEntries(fields.map((f) => [f.name, f.value]));
     payload._subject = form.dataset.subject;
     payload._template = "table";
+    payload._cc = CC_EMAIL;
     payload._honey = form.elements._honey.value;
 
     button.disabled = true;
