@@ -142,7 +142,7 @@ if (!reducedMotion && parallax.length) {
 }
 
 /* ---------- Forms: validate, then deliver via FormSubmit (mailto fallback) ---------- */
-const FIRM_EMAIL = "info@silkcover.legal";
+const FIRM_EMAIL = "info@silkcover.org";
 const FORM_ENDPOINT = `https://formsubmit.co/ajax/${FIRM_EMAIL}`;
 
 $$("form.form").forEach((form) => {
