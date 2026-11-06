@@ -88,7 +88,7 @@ const counter = new IntersectionObserver((entries) => {
 $$("[data-count]").forEach((el) => counter.observe(el));
 
 /* ---------- Services tabs ---------- */
-const tabs = $$('[role="tab"]');
+const tabs = $$('#practice [role="tab"]');
 
 function selectTab(tab, focus = false) {
   tabs.forEach((t) => {
@@ -121,6 +121,59 @@ tabs.forEach((tab, i) => {
 $$("[data-area]").forEach((chip) =>
   chip.addEventListener("click", () => selectTab($(`#tab-${chip.dataset.area}`)))
 );
+
+/* ---------- Lead consultant: profile tabs with sliding underline ---------- */
+$$(".lc__tabs").forEach((list) => {
+  const lcTabs = $$('[role="tab"]', list);
+  const ink = $(".lc__ink", list);
+  const moveInk = (tab) => {
+    ink.style.setProperty("--x", `${tab.offsetLeft}px`);
+    ink.style.setProperty("--w", `${tab.offsetWidth}px`);
+  };
+  const select = (tab, focus = false) => {
+    lcTabs.forEach((t) => {
+      const on = t === tab;
+      t.setAttribute("aria-selected", on);
+      t.tabIndex = on ? 0 : -1;
+      $(`#${t.getAttribute("aria-controls")}`).hidden = !on;
+    });
+    moveInk(tab);
+    if (focus) tab.focus();
+  };
+  lcTabs.forEach((tab, i) => {
+    tab.addEventListener("click", () => select(tab));
+    tab.addEventListener("keydown", (e) => {
+      const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (!step) return;
+      e.preventDefault();
+      select(lcTabs[(i + step + lcTabs.length) % lcTabs.length], true);
+    });
+  });
+  const current = () => lcTabs.find((t) => t.getAttribute("aria-selected") === "true");
+  moveInk(current());
+  addEventListener("resize", () => moveInk(current()));
+  document.fonts?.ready.then(() => moveInk(current()));
+});
+
+/* ---------- Lead consultant: portrait tilt and light follow the pointer ---------- */
+if (!reducedMotion && matchMedia("(hover: hover)").matches) {
+  $$("[data-tilt]").forEach((card) => {
+    card.addEventListener("pointermove", (e) => {
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width;
+      const y = (e.clientY - r.top) / r.height;
+      card.classList.add("is-tilting");
+      card.style.setProperty("--ry", `${((x - 0.5) * 10).toFixed(2)}deg`);
+      card.style.setProperty("--rx", `${((0.5 - y) * 10).toFixed(2)}deg`);
+      card.style.setProperty("--gx", `${(x * 100).toFixed(1)}%`);
+      card.style.setProperty("--gy", `${(y * 100).toFixed(1)}%`);
+    });
+    card.addEventListener("pointerleave", () => {
+      card.classList.remove("is-tilting");
+      ["--rx", "--ry", "--gx", "--gy"].forEach((p) => card.style.removeProperty(p));
+    });
+  });
+}
 
 /* ---------- Gentle parallax on photo backgrounds ---------- */
 const parallax = $$(".hero__bg, .cta__bg");
